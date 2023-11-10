@@ -48,10 +48,12 @@ def trade_results(signal,initial_capital):
     # max_loss = 0
     for i in range(short_window,len(signal)):
         close_price = df.loc[i, 'close']
-        if signal['signal'].iloc[i] == 1.0 and trade_progress == False : #Buy signal
+        date_1 = df.loc[i,'date'].split()[0]
+        date_2 = df.loc[i+1,'date'].split()[0]
+        if signal['signal'].iloc[i] == 1.0 and trade_progress == False and date_1 == date_2 : #Buy signal
             shares= 0
             buy_price =  close_price
-            if(capital >= close_price) :
+            if(capital >= close_price and date_1 == date_2 ) :
                 shares = capital // close_price
                 cost = shares * close_price
                 capital -= cost
@@ -78,8 +80,27 @@ def trade_results(signal,initial_capital):
                     current_loss = 1 if last_trade_profit else current_loss + 1
                     max_consecutive_loss = current_loss if current_loss > max_consecutive_loss else max_consecutive_loss
                     last_trade_profit = False
-                    
-                # if( )
+        elif trade_progress and date_2 > date_1:
+                sold_price = ( num_of_shares * close_price)
+                buy = num_of_shares * buy_price
+                capital = capital + sold_price
+                trade_progress = False
+                num_of_shares -= num_of_shares
+                if(buy < sold_price):
+                    trade_profit =  sold_price - buy
+                    cumulative_profit.append(trade_profit)
+                    current_win = current_win + 1 if last_trade_profit else 1
+                    max_consecutive_wins = current_win if current_win > max_consecutive_wins else max_consecutive_wins
+                    last_trade_profit = True
+                else:
+
+                    trade_loss = buy - sold_price
+                    cumulative_loss.append(trade_loss)
+                    current_loss = 1 if last_trade_profit else current_loss + 1
+                    max_consecutive_loss = current_loss if current_loss > max_consecutive_loss else max_consecutive_loss
+                    last_trade_profit = False
+                     
+
     max_draw = (max(cumulative_loss)- max(cumulative_profit))/max(cumulative_profit)
     print(f"Initial Capital: {initial_capital}")          
     print(f"Ending Capital: { capital }")
@@ -111,7 +132,7 @@ if __name__ == "__main__":
     short_window = 15
     long_window = 30
     df = pd.read_csv('NIFTY_BANK2015.csv')
-    print("Calculating Results..")
+    print("Calculating Results..",target,stop_loss,initial_capital)
     signals = create_signals(df[0:20000],short_window,long_window)
 
     #saving generated signals to signal.csv file
