@@ -109,10 +109,14 @@ if __name__ == "__main__":
     stop_loss = int(input("Stop Loss %: "))/100  # 05% stop-loss
     initial_capital = int(input("Initial Capital in Rs: ") )
     short_window = 15
-    long_window= 30
+    long_window = 30
     df = pd.read_csv('NIFTY_BANK2015.csv')
     print("Calculating Results..")
-    signals = create_signals(df[0:50000],short_window,long_window)
+    signals = create_signals(df[0:20000],short_window,long_window)
+
+    #saving generated signals to signal.csv file
+    signals.to_csv('signal.csv')
+
     trade_results(signals,initial_capital)
 
 
