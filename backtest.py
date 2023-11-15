@@ -14,22 +14,16 @@ def create_signals(df,short_window,long_window):
     for i in range(short_window,len(df)):
         signals['signal'].iloc[i] = 0.0
         # signals['target'].iloc[i] = 0.0
-
         # signals['stop_loss'].iloc[i] = 0.0
         signals['profit_loss'].iloc[i] = 0.0
-
-
         #calculating short and long term moving averages
         short = i+short_window
         long = i+long_window
         signals['short_avg'].iloc[i] = df['close'].iloc[-short:].mean()
         # signals['long_avg'] = df['close'].rolling(long_window).mean()
         signals['long_avg'].iloc[i] = df['close'].iloc[-long:].mean()
-
         #determining buy or sell signal by comparing averages
-        signals['signal'].iloc[i] = np.where(signals['short_avg'].iloc[i] > signals['long_avg'].iloc[i], 1.0, 0.0)   
-
-        
+        signals['signal'].iloc[i] = np.where(signals['short_avg'].iloc[i] > signals['long_avg'].iloc[i], 1.0, 0.0)    
     return signals
 
 def trade_results(signal,initial_capital):
@@ -48,24 +42,32 @@ def trade_results(signal,initial_capital):
     # max_loss = 0
     for i in range(short_window,len(signal)):
         close_price = df.loc[i, 'close']
+        open_price = df.loc[i,'open']
         date_1 = df.loc[i,'date'].split()[0]
         date_2 = df.loc[i+1,'date'].split()[0]
-        if signal['signal'].iloc[i] == 1.0 and trade_progress == False and date_1 == date_2 : #Buy signal
+        # print(trade_progress,num_of_shares,close_price,date_1,date_2)
+        if signal['signal'].iloc[i] == 1.0 and trade_progress == False  : # Buy signal
+            if(sqOff and date_1 == date_2) :
+                continue
             shares= 0
-            buy_price =  close_price
-            if(capital >= close_price and date_1 == date_2 ) :
-                shares = capital // close_price
-                cost = shares * close_price
+            buy_price =  close_price if open_price > close_price else open_price
+            if(capital >= buy_price and date_1 == date_2 ) :
+                shares = capital // buy_price
+                cost = shares * buy_price
                 capital -= cost
             num_of_shares += shares
             trade_progress = True
-        elif signal['signal'].iloc[i] == 0.0 and trade_progress and ((close_price >=  buy_price * (1 + target) )or (close_price <= buy_price * (1 - stop_loss)))  : #Sell Signal
+        elif signal['signal'].iloc[i] == 0.0 and trade_progress and ((open_price >= ( buy_price * (1 + target)) ) or (close_price >= ( buy_price * (1 + target)))or (open_price <= (buy_price * (1 - stop_loss))) or (close_price <= (buy_price * (1 - stop_loss))))  : #Sell Signal
                 target_price = buy_price * (1 + target)
                 max_loss = buy_price * (1 - stop_loss)
-                capital = capital + ( num_of_shares * close_price)
+                capital = capital + ( num_of_shares * buy_price)
                 trade_progress = False
-                if close_price >= target_price :
-                    trade_profit = ((num_of_shares * close_price ) - (buy_price * num_of_shares))
+                if open_price >= target_price or close_price >= target_price :
+                    if(open_price > close_price and open_price >= target_price):
+                        trade_profit = ((num_of_shares * open_price ) - (buy_price * num_of_shares))
+                    else:
+                        trade_profit = ((num_of_shares * close_price ) - (buy_price * num_of_shares))
+                         
                     cumulative_profit.append(trade_profit)
                     num_of_shares -= num_of_shares
                     current_win = current_win + 1 if last_trade_profit else 1
@@ -73,14 +75,18 @@ def trade_results(signal,initial_capital):
                     last_trade_profit = True
 
                     # max_profit = trade_profit
-                elif close_price <= max_loss :
-                    trade_loss = (buy_price* num_of_shares) - (num_of_shares * close_price) 
+                elif close_price <= max_loss or open_price <= max_loss :
+                    if(open_price > close_price and open_price >= (buy_price * (1+target)) ) :
+                        trade_loss = (buy_price* num_of_shares) - (num_of_shares * open_price) 
+                    else:
+                        trade_loss = (buy_price* num_of_shares) - (num_of_shares * open_price) 
+                        #  trade_loss = 
                     cumulative_loss.append(trade_loss)
                     num_of_shares -= num_of_shares
                     current_loss = 1 if last_trade_profit else current_loss + 1
                     max_consecutive_loss = current_loss if current_loss > max_consecutive_loss else max_consecutive_loss
                     last_trade_profit = False
-        elif trade_progress and date_2 > date_1:
+        elif sqOff and trade_progress and date_2 > date_1 :
                 sold_price = ( num_of_shares * close_price)
                 buy = num_of_shares * buy_price
                 capital = capital + sold_price
@@ -100,23 +106,23 @@ def trade_results(signal,initial_capital):
                     max_consecutive_loss = current_loss if current_loss > max_consecutive_loss else max_consecutive_loss
                     last_trade_profit = False
                      
-
+    # print(cumulative_loss,cumulative_profit)
     max_draw = (max(cumulative_loss)- max(cumulative_profit))/max(cumulative_profit)
     print(f"Initial Capital: {initial_capital}")          
     print(f"Ending Capital: { capital }")
-    print(f"Net Profit: { capital - initial_capital}")
-    print(f"Number of Winning Trades: { len(cumulative_profit) }")
-    print(f"Number of Losing Trades: { len(cumulative_loss) }")
-    print(f"Number of shares held: { num_of_shares }")
-    print(f"Total Profit: { sum(cumulative_profit) }")
-    print(f"Largest Profit: {max(cumulative_profit)}")
-    print(f"Average Profit: {max(cumulative_profit)/len(cumulative_profit)}")
+    print(f"Net Profit: { capital - initial_capital}" )
+    print(f"Number of Winning Trades: { len(cumulative_profit) }" )
+    print(f"Number of Losing Trades: { len(cumulative_loss) }" )
+    print(f"Number of shares held: { num_of_shares } ")
+    print(f"Total Profit: { sum(cumulative_profit) } ")
+    print(f"Largest Profit: { max(cumulative_profit)} ")
+    print(f"Average Profit: { max(cumulative_profit)/len(cumulative_profit)} ")
     print(f"Max Consecutive Wins: {max_consecutive_wins}")
     print(f"Total Loss: { sum(cumulative_loss) }")
     print(f"Worst Loss: { max(cumulative_loss) }")
-    print(f"Average Loss: {max(cumulative_loss)/len(cumulative_loss)}")
-    print(f"Max Consecutive Losses: {max_consecutive_loss}")
-    print(f"Max Dropdown: {max_draw}%")
+    print(f"Average Loss: {max(cumulative_loss)/len(cumulative_loss) }")
+    print(f"Max Consecutive Losses: {max_consecutive_loss} ")
+    print(f"Max Dropdown: {max_draw}% ")
 
 # Calculate ending capital and net profit
 
@@ -129,16 +135,18 @@ if __name__ == "__main__":
     target = int(input("Enter target profit in % : "))/100      # 03% target
     stop_loss = int(input("Stop Loss %: "))/100  # 05% stop-loss
     initial_capital = int(input("Initial Capital in Rs: ") )
-    short_window = 15
-    long_window = 30
+    sqOff = int(input("Square off by the end of the day (1 - Yes or 0 - No): "))
+    short_window = 100
+    long_window = 300
+
     df = pd.read_csv('NIFTY_BANK2015.csv')
     print("Calculating Results..",target,stop_loss,initial_capital)
     signals = create_signals(df[0:20000],short_window,long_window)
 
     #saving generated signals to signal.csv file
-    signals.to_csv('signal.csv')
+    # signals.to_csv('signal.csv')
 
-    trade_results(signals,initial_capital)
+    trade_results(signals, initial_capital)
 
 
    
