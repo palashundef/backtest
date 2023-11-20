@@ -1,6 +1,7 @@
 import glob
 import pandas as pd
 import numpy as np
+import pandas_ta as pta
 
 #creating signals on moving average crossover strategy
 def create_signals(df,short_window,long_window):
@@ -50,6 +51,7 @@ def trade_results(signal,initial_capital):
             if(sqOff and date_1 == date_2) :
                 continue
             shares= 0
+            print('buy')
             buy_price =  close_price if open_price > close_price else open_price
             if(capital >= buy_price and date_1 == date_2 ) :
                 shares = capital // buy_price
@@ -57,7 +59,8 @@ def trade_results(signal,initial_capital):
                 capital -= cost
             num_of_shares += shares
             trade_progress = True
-        elif signal['signal'].iloc[i] == 0.0 and trade_progress and ((open_price >= ( buy_price * (1 + target)) ) or (close_price >= ( buy_price * (1 + target)))or (open_price <= (buy_price * (1 - stop_loss))) or (close_price <= (buy_price * (1 - stop_loss))))  : #Sell Signal
+        elif signal['signal'].iloc[i] == 0.0 and trade_progress and ((open_price >= ( buy_price * (1 + target)) ) or (close_price >= ( buy_price * (1 + target))) or (open_price <= (buy_price * (1 - stop_loss))) or (close_price <= (buy_price * (1 - stop_loss))))  : #Sell Signal
+                print('sell')
                 target_price = buy_price * (1 + target)
                 max_loss = buy_price * (1 - stop_loss)
                 trade_progress = False
@@ -131,6 +134,11 @@ def trade_results(signal,initial_capital):
     print(f"Max Consecutive Losses: {max_consecutive_loss} ")
     print(f"Max Dropdown: {max_draw}% ")
 
+
+def calculate_rsi(data, period):
+    data['rsi'] = pta.rsi(df['close'],length=period)
+    return data
+    
 # Calculate ending capital and net profit
 
 if __name__ == "__main__":
@@ -145,8 +153,17 @@ if __name__ == "__main__":
     sqOff = int(input("Square off by the end of the day (1 - Yes or 0 - No): "))
     short_window = 100
     long_window = 300
+    rsi_period = 9
 
     df = pd.read_csv('NIFTY_BANK2015.csv')
+
+    print('Calculating RSI...')
+
+    df = calculate_rsi(df,rsi_period)
+    
+    print(df['rsi'])
+
+    
     print("Calculating Results..",target,stop_loss,initial_capital)
     signals = create_signals(df[0:20000],short_window,long_window)
 

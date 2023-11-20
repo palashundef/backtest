@@ -10,5 +10,6 @@ NIFTY_BANK2017.csv
 NIFTY_BANK2016.csv
 NIFTY_BANK2015.csv
 signal.csv
+rsi_data.csv
 engine.py
 Formula_2_-_Backtest_Report.pdf
