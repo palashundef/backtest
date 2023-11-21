@@ -138,7 +138,14 @@ def trade_results(signal,initial_capital):
 def calculate_rsi(data, period):
     data['rsi'] = pta.rsi(df['close'],length=period)
     return data
+
+def calculate_wma(data,period):
+    data['wma'] = pta.wma(df['rsi'], length=period)
+    return data
     
+def calculate_ema(data,period):
+    data['ema'] = pta.ema(df['rsi'],length=period)
+    return data
 # Calculate ending capital and net profit
 
 if __name__ == "__main__":
@@ -153,15 +160,28 @@ if __name__ == "__main__":
     sqOff = int(input("Square off by the end of the day (1 - Yes or 0 - No): "))
     short_window = 100
     long_window = 300
+
+    #period for different strategies
     rsi_period = 9
+    wma_period = 21
+    ema_period = 3
 
     df = pd.read_csv('NIFTY_BANK2015.csv')
 
     print('Calculating RSI...')
-
-    df = calculate_rsi(df,rsi_period)
     
-    print(df['rsi'])
+    df = calculate_rsi(df,rsi_period)
+
+    print('Calculating WMA and EMA...')
+
+    df = calculate_wma(df,wma_period)
+    df = calculate_ema(df,ema_period)
+
+    print(df)
+    exit()
+
+
+    
 
     
     print("Calculating Results..",target,stop_loss,initial_capital)
