@@ -134,32 +134,40 @@ def trade_results(signal,initial_capital):
     print(f"Max Consecutive Losses: {max_consecutive_loss} ")
     print(f"Max Dropdown: {max_draw}% ")
 
+def rsi_strategy(data, rsi_period, wma_period, ema_period):
+    data['rsi'] = pta.rsi(data['close'],length=rsi_period)
+    data['wma'] = pta.wma(data['rsi'], length=wma_period)
+    data['ema'] = pta.ema(df['rsi'],length=ema_period)
 
-def calculate_rsi(data, period):
-    data['rsi'] = pta.rsi(df['close'],length=period)
     return data
 
-def calculate_wma(data,period):
-    data['wma'] = pta.wma(df['rsi'], length=period)
-    return data
+
+
+
+
+# def calculate_rsi(data, period):
+#     return data
+
+# def calculate_wma(data,period):
+#     return data
     
-def calculate_ema(data,period):
-    data['ema'] = pta.ema(df['rsi'],length=period)
-    return data
+# def calculate_ema(data,period):
+#     return data
 # Calculate ending capital and net profit
 
 if __name__ == "__main__":
    
     # all_files = glob.glob("*.csv")
     # df = pd.concat((pd.read_csv(f) for f in all_files))
-     # Set your target and stop-loss values
+    # Set your target and stop-loss values
+    strategyNumber = int(input("1 - Moving Average Crossover\n2 - RSI Strategy\nChoose a Strategy Number:-"))
     
-    target = int(input("Enter target profit in % : "))/100      # 03% target
+    target    = int(input("Enter target profit in % : "))/100      # 03% target
     stop_loss = int(input("Stop Loss %: "))/100  # 05% stop-loss
     initial_capital = int(input("Initial Capital in Rs: ") )
     sqOff = int(input("Square off by the end of the day (1 - Yes or 0 - No): "))
     short_window = 100
-    long_window = 300
+    long_window  = 300
 
     #period for different strategies
     rsi_period = 9
@@ -168,15 +176,26 @@ if __name__ == "__main__":
 
     df = pd.read_csv('NIFTY_BANK2015.csv')
 
-    print('Calculating RSI...')
+    print('Running Strategy...')
+    if(strategyNumber == 1):
+        signals = create_signals(df[0:20000],short_window,long_window)
+
+        #saving generated signals to signal.csv file
+        # signals.to_csv('signal.csv')
+        print("Calculating Results..",target,stop_loss,initial_capital)
+        trade_results(signals, initial_capital)
+
+    else: 
+        df = rsi_strategy(df, rsi_period,wma_period, ema_period)
+
     
-    df = calculate_rsi(df,rsi_period)
+    # df = calculate_rsi(df,rsi_period)
 
-    print('Calculating WMA and EMA...')
+    # print('Calculating WMA and EMA...')
 
-    df = calculate_wma(df,wma_period)
-    df = calculate_ema(df,ema_period)
-
+    # df = calculate_wma(df,wma_period)
+    # df = calculate_ema(df,ema_period)
+    
     print(df)
     exit()
 
@@ -184,13 +203,7 @@ if __name__ == "__main__":
     
 
     
-    print("Calculating Results..",target,stop_loss,initial_capital)
-    signals = create_signals(df[0:20000],short_window,long_window)
-
-    #saving generated signals to signal.csv file
-    # signals.to_csv('signal.csv')
-
-    trade_results(signals, initial_capital)
+    
 
 
    
