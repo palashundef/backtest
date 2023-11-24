@@ -134,10 +134,29 @@ def trade_results(signal,initial_capital):
     print(f"Max Consecutive Losses: {max_consecutive_loss} ")
     print(f"Max Dropdown: {max_draw}% ")
 
-def rsi_strategy(data, rsi_period, wma_period, ema_period):
-    data['rsi'] = pta.rsi(data['close'],length=rsi_period)
+def rsi_strategy(df, rsi_period, wma_period, ema_period):
+    data = pd.DataFrame(index=df.index)
+    data['rsi'] = pta.rsi(df['close'],length=rsi_period)
     data['wma'] = pta.wma(data['rsi'], length=wma_period)
-    data['ema'] = pta.ema(df['rsi'],length=ema_period)
+    data['ema'] = pta.ema(data['rsi'],length=ema_period)
+
+    data['signal'] = 0
+    data.loc[(data['rsi'] < 50) & (data['wma'] > data['wma'].shift(1)) & (data['ema'] > data['ema'].shift(1)), 'signal'] = 1
+    data.loc[(data['rsi'] > 50) & (data['wma'] < data['wma'].shift(1)) & (data['ema'] < data['ema'].shift(1)), 'signal'] = 0
+
+
+
+    data['Buy_Signal'] = (
+    (data['rsi'] < 50) &
+    (data['wma'] > data['wma'].shift(1)) &
+    (data['ema'] > data['ema'].shift(1))
+    )
+
+    data['Sell_Signal'] = (
+        (data['rsi'] > 50) &
+        (data['wma'] < data['wma'].shift(1)) &
+        (data['ema'] < data['ema'].shift(1))
+    )
 
     return data
 
@@ -186,10 +205,13 @@ if __name__ == "__main__":
         trade_results(signals, initial_capital)
 
     else: 
-        df = rsi_strategy(df, rsi_period,wma_period, ema_period)
+        signals = rsi_strategy(df, rsi_period,wma_period, ema_period)
+        trade_results(signals, initial_capital)
+        df.to_csv('signal.csv')
 
     
-    # df = calculate_rsi(df,rsi_period)
+    # df = calculate_rsi(df,rsi_period)2
+    2
 
     # print('Calculating WMA and EMA...')
 
