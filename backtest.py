@@ -117,7 +117,7 @@ def trade_results(signal,initial_capital):
     # print(cumulative_loss,cumulative_profit)
     loss = max(cumulative_loss) if len(cumulative_loss) > 0 else 0
     profit = max(cumulative_profit) if len(cumulative_profit) > 0 else 0
-    max_draw = (loss - profit)/profit
+    max_draw = (loss - profit)/profit if loss != 0 or profit != 0 else 0
     print(f"Initial Capital: {initial_capital}")          
     print(f"Ending Capital: { capital }")
     print(f"Net Profit: { capital - initial_capital}" )
@@ -126,11 +126,18 @@ def trade_results(signal,initial_capital):
     print(f"Number of shares held: { num_of_shares } ")
     print(f"Total Profit: { sum(cumulative_profit) } ")
     print(f"Largest Profit: { profit} ")
-    print(f"Average Profit: { sum(cumulative_profit)/len(cumulative_profit)} ")
+    if(len(cumulative_profit) > 0) :
+        print(f"Average Profit: { sum(cumulative_profit)/len(cumulative_profit)} ")
+    else:
+        print(f"No profit earned.")
+
     print(f"Max Consecutive Wins: {max_consecutive_wins}")
     print(f"Total Loss: { sum(cumulative_loss) }")
     print(f"Worst Loss: { loss }")
-    print(f"Average Loss: { sum(cumulative_loss)/len(cumulative_loss) }")
+    if(len(cumulative_loss) > 0):
+        print(f"Average Loss: { sum(cumulative_loss)/len(cumulative_loss) }")
+    else:
+        print(f"No Losses Incurred.")
     print(f"Max Consecutive Losses: {max_consecutive_loss} ")
     print(f"Max Dropdown: {max_draw}% ")
 
@@ -145,34 +152,9 @@ def rsi_strategy(df, rsi_period, wma_period, ema_period):
     data.loc[(data['rsi'] > 50) & (data['wma'] < data['wma'].shift(1)) & (data['ema'] < data['ema'].shift(1)), 'signal'] = 0
 
 
-
-    data['Buy_Signal'] = (
-    (data['rsi'] < 50) &
-    (data['wma'] > data['wma'].shift(1)) &
-    (data['ema'] > data['ema'].shift(1))
-    )
-
-    data['Sell_Signal'] = (
-        (data['rsi'] > 50) &
-        (data['wma'] < data['wma'].shift(1)) &
-        (data['ema'] < data['ema'].shift(1))
-    )
-
     return data
 
 
-
-
-
-# def calculate_rsi(data, period):
-#     return data
-
-# def calculate_wma(data,period):
-#     return data
-    
-# def calculate_ema(data,period):
-#     return data
-# Calculate ending capital and net profit
 
 if __name__ == "__main__":
    
@@ -205,20 +187,20 @@ if __name__ == "__main__":
         trade_results(signals, initial_capital)
 
     else: 
-        signals = rsi_strategy(df, rsi_period,wma_period, ema_period)
+        signals = rsi_strategy(df[0:20000], rsi_period,wma_period, ema_period)
         trade_results(signals, initial_capital)
-        df.to_csv('signal.csv')
+        # df.to_csv('signal.csv')
 
     
-    # df = calculate_rsi(df,rsi_period)2
-    2
+    
+    # df = calculate_rsi(df,rsi_period)
 
     # print('Calculating WMA and EMA...')
 
     # df = calculate_wma(df,wma_period)
     # df = calculate_ema(df,ema_period)
     
-    print(df)
+    # print(df)
     exit()
 
 
